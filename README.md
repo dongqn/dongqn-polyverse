@@ -1,167 +1,110 @@
-# ⛓️🔗⛓️ Template for IBC enabled Solidity contracts
+# PIT Phase 1 repo project: Cross-chain Proof of NFT
 
-This repo provides a starter project to build [IBC](https://github.com/cosmos/ibc) enabled Solidity contracts that connect rollups to one another Polymer Hub, through the [vIBC core contracts](https://github.com/open-ibc/vibc-core-smart-contracts).
+This repository is created to enter the PIT phase 1 challenge # 22.
 
-The repository is a _GitHub template_ repository so you can click "Use this template" to create your own project repository without having the entire commit history of the template.
+## Team Members
 
-![GitHub template](./img/gh_template.png)
+- @tmsdkeys - Lead Developer
 
-## 📚 Documentation
+## Description
 
-There's some basic information here in the README but a more comprehensive documentation can be found in [the official Polymer documentation](https://docs.polymerlabs.org/docs/category/build-ibc-dapps-1).
+This application enables a user to submit a vote a ballot on a contract on OP Sepolia. The information about this vote subsequently gets sent to an ERC721 NFT contract on Base Sepolia to mint an NFT related to the vote.
 
-## 📋 Prerequisites
+Features:
 
-The repo is **compatible with both Hardhat and Foundry** development environments.
+- Uses Polymer x IBC as the cross-chain format
+- Commits to the spirit of application specific chains/rollups where voting functionality could be specialized on one chain, NFT marketplace on another and both can form composable applications through interoperability.
 
-- Have [git](https://git-scm.com/downloads) installed
-- Have [node](https://nodejs.org) installed (v18+)
-- Have [Foundry](https://book.getfoundry.sh/getting-started/installation) installed (Hardhat will be installed when running `npm install`)
-- Have [just](https://just.systems/man/en/chapter_1.html) installed (recommended but not strictly necessary)
+## Resources used
 
-Some basic knowledge of all of these tools is also required, although the details are abstracted away for basic usage.
+The repo uses the [ibc-app-solidity-template](https://github.com/open-ibc/ibc-app-solidity-template) as starting point and adds custom contracts XBallot and XProofOfVoteNFT that implement the custom logic.
 
-## 🧰 Install dependencies
+It changes the send-packet.js script slightly to adjust to the custom logic.
 
-To compile your contracts and start testing, make sure that you have all dependencies installed.
+The expected behaviour from the template should still work but nevertheless we quickly review the steps for the user to test the application...
 
-From the root directory run:
-```bash
+Additional resources used:
+- Hardhat
+- Blockscout
+- Tenderly
+
+## Steps to reproduce
+
+After cloning the repo, install dependencies:
+
+```sh
 just install
 ```
-to install the [vIBC core smart contracts](https://github.com/open-ibc/vibc-core-smart-contracts) as a dependency. 
 
-Additionally Hardhat will be installed as a dev dependency with some useful plugins. Check `package.json` for an exhaustive list.
+And add your private key to the .env file (rename it from .env.example).
 
-## ⚙️ Set up your environment variables
-
-Convert the `.env.example` file into an `.env` file. This will ignore the file for future git commits as well as expose the environment variables. Add your private keys and update the other values if you want to customize (advanced usage feature).
-
-```
-Update:     .env.example -------> .env
+Then make sure that the config has the right contracts:
+```sh
+just set-contracts optimism XBallot && \
+just set-contracts base XProofOfVoteNFT
 ```
 
-This will enable you to sign transactions with your private key(s). If not added, the scripts from the justfile will fail.
+> Note: The order matters here! Make sure to have the exact configuration
 
-## 🏃🏽🏃🏻‍♀️ Quickstart
-
-The project comes with a built-in dummy application called x-counter. You can find the contracts in the `/contracts` directory as XCounterUC.sol and XCounter.sol (the former when using the universal channel, the latter when creating a custom IBC channel).
-
-The default setup (`.env`, `config.json`) are preconfigured to try to send packets over the universal channel.
-
-Run the following as a sanity check:
-```bash
-# Usage: just send-packet [source] [universal]
-# Source can be either 'optimism' or 'base', universal is set to true
-just send-packet optimism true
+Check if the contracts compile:
+```sh
+just compile
 ```
-<!-- TODO: add how to check for the packet on explorer or set up an event listener -->
+### Deployment and creating channels (optional)
 
-Check if the packet got through on the [Polymer IBC explorer](https://explorer.prod.testnet.polymer.zone/packets).
+Then you can deploy the contract if you want to have a custom version, but you can use the provided contract addresses that are prefilled in the config. If using the default, you can skip to the step to send packets.
 
-## 💻 Develop your custom application
-
-The main work for you as a developer is to develop the contracts that make up your cross-chain logic.
-
-You can use the contracts in the "/contracts/base" directory as base contracts for creating IBC enabled contracts that can either send packets over the universal channel or create their own channel to send packets over.
-
-A complete walkthrough on how to develop these contracts is provided in the [official Polymer documentation](https://docs.polymerlabs.org/docs/build/ibc-solidity/).
-
-## 🕹️ Interaction with the contracts
-
-When the contracts are ready, you can go ahead and interact with the contracts through scripts. There is a Justfile to for the most common commands, with the underlying scripts in the /scripts folder.
-
-There's three types of default scripts in the project:
-
-- `deploy.js` and `deploy-config.js` allow you to deploy your application contract
-- `create-channel.js` and `create-channel-config.js` creates a channel
-- `send-packet.js` sends packets over an existing custom channel, and `send-universal-packet.js` is specifically for sending packets over a universal channel
-
-For every script you'll find a field in the configuration file!!
-
-> **Note**: These are the default scripts provided. They provide the most generic interactions with the contracts to deploy, create channels and send packets. For more complicated use cases you will want to customize the scripts to your use case. See [advanced usage](#🦾-advanced-usage) for more info.
-
-### Deploy
-
-Before deploying, make sure to update the config.json with your contract type to deploy for each of the chain you wish to deploy to.
-
-Do this by running:
-```bash
-# Usage: just set-contracts [chain] [contract_type]
-just set-contracts optimism MyContract
-```
-to deploy _MyContract_ artefact to the Optimism (Sepolia) chain.
-
-Then run:
-```bash
-# Usage: just deploy [source] [destination] [universal]
-just deploy optimism base true
-```
-for an application that will use a universal channel, or:
-```bash
-# or 
+If you want to deploy your own, run:
+```sh
 just deploy optimism base false
 ```
-for an application that uses custom channels.
-
-The script will take the output of the deployment and update the config file with all the relevant information.
-
-### Create a channel
-
-If you're **using universal channels, channel creation is not required**. Your contract will send and receive packet data from the Universal channel handler contract which already has a universal channel to send packets over. You can directly proceed to sending (universal) packets in that case.
-
-To create a custom channel, run:
-```bash
+and create a channel:
+```sh
 just create-channel
 ```
 
-This creates a channel between base and optimism. Note that the **ORDER MATTERS**; if you picked optimism as the source chain (first argument) above, by default it will create the channel from optimism and vice versa.
+### Sending a packet
 
-The script will take the output of the channel creation and update the config file with all the relevant information.
+Now with an existing channel in the config (your own or the default), run:
 
-Check out the [channel tab in the explorer](https://explorer.prod.testnet.polymer.zone/channels) to find out if the correct channel-id's related to your contracts were updated in the config.
-
-### Send packets
-Finally Run:
-```bash
-# Usage: just send-packet [source] [universal]
-just send-packet optimism true
-```
-to send a packet over a **universal channel**. You can pick either optimism or base to send the packet from.
-
-Or run:
-```bash
+```sh
 just send-packet optimism false
 ```
-to send a packet over a **custom channel**. You can pick either optimism or base to send the packet from.
+You'll see an active waiting poll in the terminal and will be informed if the packet was sent successfully.
 
-## 🦾 Advanced usage
+## Proof of testnet interaction
 
-For advanced users, there's multiple custimizations to follow. These includes configuring the config.json manually and/or running the scripts without using just.
+After following the steps above you should have interacted with the testnet. You can check this at the [IBC Explorer](https://explorer.ethdenver.testnet.polymer.zone/).
 
-For example, the last action to send a packet on a universal channel could be executed with this command:
-```bash
-npx hardhat run scripts/send-universal-packet.js --network base
-```
+Here's the data of our application:
 
-To send a universal packet from the contract specified in the config.sendUniversalPacket field in the config.
+- XBallot (OP Sepolia) : 0xB604C9F99Dc3Ebff9E12b71690141c7939fA0266
+- XProofOfVoteNFT (Base Sepolia): 0x33e23218a21bF730CFb07822CDCDfb2B11e962A5
+- Channel (OP Sepolia): channel-20
+- Channel (Base Sepolia): channel-21
 
-## 🤝 Contributing
+- Proof of Testnet interaction:
+    - [SendTx](https://optimism-sepolia.blockscout.com/tx/0x11431bcd6e7799ba4db96a6da4a61e5a0c98cd41c41e4fb6749c3b6191c21f10)
+    - [RecvTx](https://base-sepolia.blockscout.com/tx/0x73346e31af72d40a93076a7082d5dd099e2242b68e194912e227e269639067d2)
+    - [Ack](https://optimism-sepolia.blockscout.com/tx/0x53c021bbd48958ce84f5185c0287228e573f0fcfd755ee9e2c2d605b534ca834)
 
-We welcome and encourage contributions from our community! Here’s how you can contribute.
+## Challenges Faced
 
-Take a look at the open issues. If there's an issue that has the _help wanted_ label or _good first issue_, those are up for grabs. Assign yourself to the issue so people know you're working on it.
+- Debugging used to be tricky when the sendPacket on the contract was successfully submitted but there was an error further down the packet lifecycle.
+What helped was to verify the contracts and use Tenderly for step-by-step debugging to see what the relayers submitted to the dispatcher etc.
 
-Alternatively you can open an issue for a new idea or piece of feedback.
+## What we learned
 
-When you want to contribute code, please follow these steps:
+How to make the first dApp using Polymer.
 
-1. **Fork the Repository:** Start by forking this repository.
-2. **Apply the improvements:** Want to optimize something or add support for additional developer tooling? Add your changes!
-3. **Create a Pull Request:** Once you're ready and have tested your added code, submit a PR to the repo and we'll review as soon as possible.
+## Future improvements
 
-## 💡 Questions or Suggestions?
+Basic functionality was implemented, but the following things can be improved:
 
-Feel free to open an issue for questions, suggestions, or discussions related to this repository. For further discussion as well as a showcase of some community projects, check out the [Polymer developer forum](https://forum.polymerlabs.org).
+- More tests
+- More input validation
+- Add event listeners related to important IBC lifecycle steps
 
-Thank you for being a part of our community!
+## Licence
+
+[Apache 2.0](LICENSE)

@@ -5,6 +5,7 @@ This repository is created to enter the PIT phase 1 challenge # 22.
 ## Team Members
 
 - @tmsdkeys - Lead Developer
+- @dshiell - Developer
 
 ## Description
 

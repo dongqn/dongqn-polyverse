@@ -13,16 +13,35 @@ const sendConfig = config.sendPacket;
 
 async function main() {
     const accounts = await hre.ethers.getSigners();
-    console.log(accounts)
+    //console.log(accounts)
 
     const networkName = hre.network.name;
     // Get the contract type from the config and get the contract
     const contractType = config["deploy"][`${networkName}`];
 
-    const ibcAppSrc = await hre.ethers.getContractAt(
+    const ibcBallot = await hre.ethers.getContractAt(
         `${contractType}`,
         sendConfig[`${networkName}`]["portAddr"]
     );
+
+    const chairperson = await ibcBallot.chairperson();
+    console.log('Owner: ' + chairperson)
+    
+    const voterAddr = accounts[1].address;
+    // The very first time an account votes, the chairperson must give them the right to vote
+    const voter = await ibcBallot.voters(voterAddr);
+
+    if (voter.weight == 0) {
+        await ibcBallot.connect(accounts[0]).giveRightToVote(voterAddr);
+        console.log(`Chairperson gives right to vote to: ${voterAddr}`)
+    }
+
+    // To test the packet lifecycle multiple times using the same account, we need to reset the voter's state
+
+    await ibcBallot.resetVoter(voterAddr);
+
+    // Vote first before sending the packet
+    await ibcBallot.connect(accounts[1]).vote(1);
 
     // Do logic to prepare the packet
     const channelId = sendConfig[`${networkName}`]["channelId"];
@@ -30,10 +49,11 @@ async function main() {
     const timeoutSeconds = sendConfig[`${networkName}`]["timeout"];
 
     // Send the packet
-    await ibcAppSrc.connect(accounts[0]).sendPacket(
+    await ibcBallot.connect(accounts[1]).sendPacket(
         channelIdBytes,
         timeoutSeconds,
-        // Define and pass optionalArgs appropriately or remove if not needed
+        voterAddr,
+        voterAddr
         )
     console.log("Sending packet");
 
@@ -42,14 +62,15 @@ async function main() {
     let acked = false;
     let counter = 0;
     do {
-        // Define an acked by interacting with the contract. This will depend on the contract's logic
+        const updatedVoter = await ibcBallot.voters(voterAddr);
+        acked = updatedVoter.ibcNFTMinted;
         if (!acked) {
             console.log("ack not received. waiting...");
             await new Promise((r) => setTimeout(r, 2000));
             counter++;
-        }
+        } 
     } while (!acked && counter<100);
-
+    
     console.log("Packet lifecycle was concluded successfully: " + acked);
 }
 

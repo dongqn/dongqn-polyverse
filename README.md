@@ -23,6 +23,7 @@ The repo uses the [ibc-app-solidity-template](https://github.com/open-ibc/ibc-ap
 It changes the send-packet.js script slightly to adjust to the custom logic.
 
 The expected behaviour from the template should still work but nevertheless we quickly review the steps for the user to test the application...
+Run `just --list` for a full overview of the just commands.
 
 Additional resources used:
 - Hardhat
